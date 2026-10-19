@@ -4,6 +4,7 @@
 [![.NET 8](https://img.shields.io/badge/.NET-8.0_WPF-blue.svg)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows_x64-0078D6.svg)](https://microsoft.com/windows)
 [![Portable](https://img.shields.io/badge/Portable-Single_EXE-success.svg)](publish.ps1)
+[![Download Latest](https://img.shields.io/badge/Download-Portable_EXE-brightgreen?logo=windows)](https://github.com/finalbyte1/MongoDBTinyClient/releases/latest)
 
 A fast, lightweight, and portable **MongoDB client and GUI for Windows** in the spirit of [DB Browser for SQLite](https://sqlitebrowser.org). 
 
@@ -61,10 +62,17 @@ Most modern MongoDB desktop clients (like MongoDB Compass) are built on Electron
 
 ---
 
-## 🚀 Download & Quick Start
+## 🚀 Download & Releases
 
-### Run Portable Executable
-Download the latest `MongoDBTinyClient.exe` from the [Releases](https://github.com/finalbyte1/MongoDBTinyClient/releases) tab and run it directly. No installation required.
+### 📦 Portable Executable (No installation required)
+
+An updated standalone build is generated and published automatically on every release:
+
+* ⬇️ **[Download Latest `MongoDBTinyClient.exe`](https://github.com/finalbyte1/MongoDBTinyClient/releases/latest/download/MongoDBTinyClient.exe)** *(Direct download, ~65 MB, ready to run)*
+* 📦 **[Download Latest `.zip` package](https://github.com/finalbyte1/MongoDBTinyClient/releases/latest/download/MongoDBTinyClient-win-x64.zip)**
+* 📑 Browse all builds and historical changelogs on the **[Releases Page](https://github.com/finalbyte1/MongoDBTinyClient/releases)**.
+
+Just download and double-click `MongoDBTinyClient.exe`. No installer, no administrator rights, and no .NET runtime installation required.
 
 ### Build from Source
 

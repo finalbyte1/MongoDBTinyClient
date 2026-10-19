@@ -1,0 +1,89 @@
+name: Release Portable
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Portable Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Portable Executable
+        shell: pwsh
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -o publish
+
+      - name: Package Assets
+        shell: pwsh
+        run: |
+          Copy-Item LICENSE publish/
+          Copy-Item README.md publish/
+          Compress-Archive -Path publish/* -DestinationPath MongoDBTinyClient-win-x64.zip
+          Copy-Item publish/MongoDBTinyClient.exe ./MongoDBTinyClient.exe
+
+      - name: Setup Tag and Metadata
+        id: meta
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like "refs/tags/*") {
+            $tag = $env:GITHUB_REF_NAME
+            $title = "MongoDB Tiny Client $tag"
+          } else {
+            $tag = "latest"
+            $title = "MongoDB Tiny Client — Latest Release"
+            
+            # Point or update the 'latest' git tag
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -f latest
+            git push -f origin latest
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "title=$title" >> $env:GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.title }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          body: |
+            ## 🚀 MongoDB Tiny Client — Portable Windows Release
+
+            A fast, lightweight, and portable MongoDB client and GUI for Windows.
+            No installation, no admin privileges, and no external .NET runtime required.
+
+            ### 📦 Download Options
+            * **[`MongoDBTinyClient.exe`](https://github.com/finalbyte1/MongoDBTinyClient/releases/download/${{ steps.meta.outputs.tag }}/MongoDBTinyClient.exe)** — Single portable executable. Download and double-click to run!
+            * **[`MongoDBTinyClient-win-x64.zip`](https://github.com/finalbyte1/MongoDBTinyClient/releases/download/${{ steps.meta.outputs.tag }}/MongoDBTinyClient-win-x64.zip)** — Compressed archive containing the executable, documentation, and license.
+
+            ---
+            *Automatically compiled and published by GitHub Actions from commit `${{ github.sha }}`.*
+          files: |
+            ./MongoDBTinyClient.exe
+            ./MongoDBTinyClient-win-x64.zip
