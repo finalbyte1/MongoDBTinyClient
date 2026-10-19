@@ -1,0 +1,354 @@
+<Window x:Class="MongoDBTinyClient.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MongoDB Tiny Client"
+        Width="1280" Height="800" MinWidth="760" MinHeight="460"
+        Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource TextBrush}"
+        WindowStartupLocation="CenterScreen" UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal" FontFamily="{StaticResource UiFont}" FontSize="12.5">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ===================== Connection bar ===================== -->
+        <Border Grid.Row="0" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush2}"
+                BorderThickness="0,0,0,1" Padding="12,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Ellipse Width="10" Height="10" Fill="{StaticResource AccentBrush}" Margin="0,0,8,0" x:Name="ConnectionDot" />
+                    <TextBlock Text="MongoDB Tiny Client" Style="{StaticResource TitleText}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBox x:Name="ConnectionBox" Grid.Column="1" Style="{StaticResource QueryBox}"
+                         Tag="mongodb://user:password@host:27017/?authSource=admin"
+                         ToolTip="Connection string (mongodb:// or mongodb+srv://). Press Enter to connect." />
+                <Button x:Name="RecentButton" Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE81C;"
+                        Margin="4,0,0,0" FontSize="14" ToolTip="Recent connections" />
+                <Button x:Name="ConnectButton" Grid.Column="3" Style="{StaticResource AccentButton}" Content="Connect"
+                        MinWidth="96" Margin="8,0,0,0" />
+            </Grid>
+        </Border>
+
+        <!-- ===================== Main area ===================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="270" MinWidth="170" />
+                <ColumnDefinition Width="1" />
+                <ColumnDefinition Width="*" MinWidth="380" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar: databases and collections -->
+            <Border Background="{StaticResource SidebarBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Margin="14,10,8,4">
+                        <TextBlock Text="DATABASES" Style="{StaticResource LabelText}" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="NewDatabaseButton" Style="{StaticResource IconButton}" Content="&#xE710;"
+                                    ToolTip="Create database" IsEnabled="False" />
+                            <Button x:Name="RefreshTreeButton" Style="{StaticResource IconButton}" Content="&#xE72C;"
+                                    ToolTip="Refresh" IsEnabled="False" />
+                        </StackPanel>
+                    </Grid>
+                    <TreeView x:Name="DbTree" Grid.Row="1" Margin="6,0,4,6" />
+                    <TextBlock x:Name="TreeHint" Grid.Row="1" Style="{StaticResource CaptionText}" Margin="16,6,12,0"
+                               TextWrapping="Wrap" Text="Not connected." />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="5" Margin="-2,0" HorizontalAlignment="Stretch" Background="Transparent" />
+            <Border Grid.Column="1" Background="{StaticResource BorderBrush2}" IsHitTestVisible="False" />
+
+            <!-- Welcome / empty state -->
+            <StackPanel x:Name="WelcomePanel" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        MaxWidth="520">
+                <TextBlock x:Name="WelcomeTitle" Text="Connect to a MongoDB server" Style="{StaticResource TitleText}"
+                           FontSize="20" HorizontalAlignment="Center" />
+                <TextBlock x:Name="WelcomeText" Style="{StaticResource CaptionText}" FontSize="12.5" Margin="0,10,0,0"
+                           TextWrapping="Wrap" TextAlignment="Center" LineHeight="20"
+                           Text="Type a connection string at the top and press Enter. Examples:" />
+                <TextBlock x:Name="WelcomeExamples" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource SubtleTextBrush}"
+                           Margin="0,12,0,0" HorizontalAlignment="Center" LineHeight="20" FontSize="12"
+                           Text="mongodb://localhost:27017&#x0a;mongodb://user:pass@host:27017/?authSource=admin&#x0a;mongodb+srv://user:pass@cluster0.example.mongodb.net/mydb" />
+            </StackPanel>
+
+            <TabControl x:Name="Tabs" Grid.Column="2" Visibility="Collapsed">
+
+                <!-- ===================== Browse Data ===================== -->
+                <TabItem Header="Browse Data" x:Name="BrowseTab">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Toolbar -->
+                        <Grid Margin="10,8,10,0">
+                            <TextBlock x:Name="CollectionTitle" Style="{StaticResource TitleText}" VerticalAlignment="Center"
+                                       Margin="4,0,16,0" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="AddDocButton" Style="{StaticResource ToolButton}" Tag="&#xE710;" Content="Add"
+                                        ToolTip="Insert a new document (Ctrl+N)" />
+                                <Button x:Name="EditDocButton" Style="{StaticResource ToolButton}" Tag="&#xE70F;" Content="Edit"
+                                        ToolTip="Edit the selected document as JSON (Enter). Tip: press F2 or double-click a cell to edit just that value." />
+                                <Button x:Name="CloneDocButton" Style="{StaticResource ToolButton}" Tag="&#xE8C8;" Content="Duplicate"
+                                        ToolTip="Insert a copy of the selected document" />
+                                <Button x:Name="DeleteDocButton" Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Delete"
+                                        ToolTip="Delete the selected documents (Del)" />
+                                <Border Width="1" Background="{StaticResource BorderBrush2}" Margin="6,4" />
+                                <Button x:Name="ImportButton" Style="{StaticResource ToolButton}" Tag="&#xE8B5;" Content="Import"
+                                        ToolTip="Insert documents from a JSON / JSON Lines file" />
+                                <Button x:Name="ExportButton" Style="{StaticResource ToolButton}" Tag="&#xEDE1;" Content="Export"
+                                        ToolTip="Export the documents matching the filter" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Filter line -->
+                        <Grid Grid.Row="1" Margin="14,8,14,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="3*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" MaxWidth="240" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" MaxWidth="240" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="FILTER" Style="{StaticResource LabelText}" Margin="0,0,8,0" />
+                            <TextBox x:Name="FilterBox" Grid.Column="1" Style="{StaticResource QueryBox}"
+                                     Tag="{}{ field: &quot;value&quot;, age: { $gt: 30 } }"
+                                     ToolTip="MongoDB query. Keys may be unquoted; ObjectId(&quot;...&quot;), ISODate(&quot;...&quot;) and /regex/ are supported. Enter = apply." />
+                            <TextBlock Grid.Column="2" Text="SORT" Style="{StaticResource LabelText}" Margin="12,0,8,0" />
+                            <TextBox x:Name="SortBox" Grid.Column="3" Style="{StaticResource QueryBox}" Tag="{}{ _id: -1 }"
+                                     ToolTip="Sort document: 1 = ascending, -1 = descending. Clicking a column header fills it in." />
+                            <TextBlock Grid.Column="4" Text="FIELDS" Style="{StaticResource LabelText}" Margin="12,0,8,0" />
+                            <TextBox x:Name="ProjectionBox" Grid.Column="5" Style="{StaticResource QueryBox}" Tag="{}{ name: 1 }"
+                                     ToolTip="Projection: which fields to show (1) or hide (0)." />
+                            <Button x:Name="FindButton" Grid.Column="6" Style="{StaticResource AccentButton}" Content="Apply"
+                                    Margin="12,0,0,0" MinWidth="70" ToolTip="Run the query (Enter / F5)" />
+                            <Button x:Name="ClearFilterButton" Grid.Column="7" Style="{StaticResource IconButton}" Content="&#xE894;"
+                                    Margin="4,0,0,0" ToolTip="Clear filter, sort and fields" />
+                        </Grid>
+
+                        <!-- Grid + document preview -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="200" />
+                                <ColumnDefinition Width="1" />
+                                <ColumnDefinition Width="340" MinWidth="0" />
+                            </Grid.ColumnDefinitions>
+                            <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0">
+                                <DataGrid x:Name="DocsGrid" Style="{StaticResource ThemedDataGrid}" />
+                            </Border>
+                            <TextBlock x:Name="DocsEmpty" Style="{StaticResource CaptionText}" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" Visibility="Collapsed" FontSize="13" />
+
+                            <GridSplitter Grid.Column="1" Width="5" Margin="-2,0" HorizontalAlignment="Stretch" Background="Transparent" />
+                            <Border Grid.Column="1" Background="{StaticResource BorderBrush2}" IsHitTestVisible="False" />
+
+                            <Grid Grid.Column="2" Background="{StaticResource SidebarBrush}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0" Padding="12,6,6,6">
+                                    <Grid>
+                                        <TextBlock Text="DOCUMENT" Style="{StaticResource LabelText}" />
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <Button x:Name="CopyDocButton" Style="{StaticResource IconButton}" Content="&#xE8C8;"
+                                                    ToolTip="Copy the document as JSON" />
+                                            <Button x:Name="PreviewEditButton" Style="{StaticResource IconButton}" Content="&#xE70F;"
+                                                    ToolTip="Edit this document" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <TextBox x:Name="PreviewBox" Grid.Row="1" Style="{StaticResource CodeBox}" IsReadOnly="True"
+                                         Background="Transparent" BorderThickness="0" FontSize="12" />
+                            </Grid>
+                        </Grid>
+
+                        <!-- Paging -->
+                        <Border Grid.Row="3" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0" Padding="10,5">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="FirstPageButton" Style="{StaticResource IconButton}" Content="&#xE892;" ToolTip="First page" />
+                                    <Button x:Name="PrevPageButton" Style="{StaticResource IconButton}" Content="&#xE76B;" ToolTip="Previous page (Ctrl+Left)" />
+                                    <TextBlock x:Name="PageText" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="8,0" MinWidth="160"
+                                               TextAlignment="Center" />
+                                    <Button x:Name="NextPageButton" Style="{StaticResource IconButton}" Content="&#xE76C;" ToolTip="Next page (Ctrl+Right)" />
+                                    <Button x:Name="LastPageButton" Style="{StaticResource IconButton}" Content="&#xE893;" ToolTip="Last page" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <TextBlock Text="Rows per page" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBox x:Name="PageSizeBox" Style="{StaticResource ThemedTextBox}" Width="60" Padding="4,2"
+                                             HorizontalContentAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== Indexes ===================== -->
+                <TabItem Header="Indexes" x:Name="IndexesTab">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Margin="14,10,14,0">
+                            <TextBlock x:Name="IndexesTitle" Style="{StaticResource TitleText}" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="DropIndexButton" Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Drop index"
+                                        ToolTip="Drop the selected index" />
+                                <Button x:Name="RefreshIndexesButton" Style="{StaticResource ToolButton}" Tag="&#xE72C;" Content="Refresh" />
+                            </StackPanel>
+                        </Grid>
+                        <Border Grid.Row="1" Margin="14,10,14,10" Padding="12,10" CornerRadius="8"
+                                Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="NEW INDEX" Style="{StaticResource LabelText}" Margin="0,0,10,0" />
+                                <TextBox x:Name="IndexKeysBox" Grid.Column="1" Style="{StaticResource QueryBox}"
+                                         Tag="{}{ email: 1 }  or  { lastName: 1, firstName: 1 }  or  { title: &quot;text&quot; }"
+                                         ToolTip="Index keys: 1 ascending, -1 descending, &quot;text&quot;, &quot;2dsphere&quot;, &quot;hashed&quot;" />
+                                <TextBlock Grid.Column="2" Text="NAME" Style="{StaticResource LabelText}" Margin="12,0,8,0" />
+                                <TextBox x:Name="IndexNameBox" Grid.Column="3" Style="{StaticResource ThemedTextBox}" Tag="optional" />
+                                <CheckBox x:Name="IndexUniqueCheck" Grid.Column="4" Style="{StaticResource ThemedCheckBox}" Content="Unique"
+                                          Margin="12,0,0,0" VerticalAlignment="Center" />
+                                <Button x:Name="CreateIndexButton" Grid.Column="5" Style="{StaticResource AccentButton}" Content="Create"
+                                        Margin="12,0,0,0" MinWidth="70" />
+                            </Grid>
+                        </Border>
+                        <Border Grid.Row="2" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0">
+                            <DataGrid x:Name="IndexesGrid" Style="{StaticResource ThemedDataGrid}" IsReadOnly="True"
+                                      SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="220"
+                                                        ElementStyle="{StaticResource GridCellText}" />
+                                    <DataGridTextColumn Header="Keys" Binding="{Binding Keys}" Width="2*"
+                                                        ElementStyle="{StaticResource GridCellText}" />
+                                    <DataGridTextColumn Header="Options" Binding="{Binding Options}" Width="*"
+                                                        ElementStyle="{StaticResource GridCellText}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== Query ===================== -->
+                <TabItem Header="Run Query" x:Name="QueryTab">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="220" MinHeight="80" />
+                            <RowDefinition Height="1" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MinHeight="80" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Margin="14,8,14,8">
+                            <StackPanel Orientation="Horizontal">
+                                <Border CornerRadius="6" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource BorderBrush2}"
+                                        BorderThickness="1" Padding="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="AggregateMode" Style="{StaticResource SegmentRadio}" GroupName="QueryMode"
+                                                     Content="Aggregate" IsChecked="True"
+                                                     ToolTip="Run an aggregation pipeline on the selected collection" />
+                                        <RadioButton x:Name="CommandMode" Style="{StaticResource SegmentRadio}" GroupName="QueryMode"
+                                                     Content="Database command"
+                                                     ToolTip="Run a command on the selected database (db.runCommand)" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock x:Name="QueryTarget" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="14,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="ExamplesButton" Style="{StaticResource ToolButton}" Tag="&#xE82D;" Content="Examples" />
+                                <Button x:Name="RunQueryButton" Style="{StaticResource AccentButton}" Content="&#x25B6;  Run" MinWidth="80"
+                                        Margin="6,0,0,0" ToolTip="Run (F5 or Ctrl+Enter)" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBox x:Name="QueryEditor" Grid.Row="1" Style="{StaticResource CodeBox}" Margin="14,0,14,10" />
+
+                        <GridSplitter Grid.Row="2" Height="5" Margin="0,-2" HorizontalAlignment="Stretch" Background="Transparent" />
+                        <Border Grid.Row="2" Background="{StaticResource BorderBrush2}" IsHitTestVisible="False" />
+
+                        <Grid Grid.Row="3" Margin="14,6,10,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="RESULTS" Style="{StaticResource LabelText}" Margin="0,0,12,0" />
+                                <Border CornerRadius="6" Background="{StaticResource InputBrush}" BorderBrush="{StaticResource BorderBrush2}"
+                                        BorderThickness="1" Padding="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton x:Name="ResultTableView" Style="{StaticResource SegmentRadio}" GroupName="ResultView"
+                                                     Content="Table" IsChecked="True" />
+                                        <RadioButton x:Name="ResultJsonView" Style="{StaticResource SegmentRadio}" GroupName="ResultView"
+                                                     Content="JSON" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock x:Name="QueryInfo" Style="{StaticResource CaptionText}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="CopyResultsButton" Style="{StaticResource ToolButton}" Tag="&#xE8C8;" Content="Copy JSON" />
+                                <Button x:Name="ExportResultsButton" Style="{StaticResource ToolButton}" Tag="&#xEDE1;" Content="Export" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Grid.Row="4" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,1,0,0">
+                            <Grid>
+                                <DataGrid x:Name="ResultsGrid" Style="{StaticResource ThemedDataGrid}" IsReadOnly="True" />
+                                <TextBox x:Name="ResultsJson" Style="{StaticResource CodeBox}" IsReadOnly="True" Visibility="Collapsed"
+                                         Background="Transparent" BorderThickness="0" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== Info ===================== -->
+                <TabItem Header="Info" x:Name="InfoTab">
+                    <TextBox x:Name="InfoBox" Style="{StaticResource CodeBox}" IsReadOnly="True" Background="Transparent"
+                             BorderThickness="0" Margin="6,6,0,0" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+
+        <!-- ===================== Status bar ===================== -->
+        <Border Grid.Row="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource BorderBrush2}"
+                BorderThickness="0,1,0,0" Padding="12,4">
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="BusyIcon" Style="{StaticResource IconText}" Text="&#xE895;" Foreground="{StaticResource AccentBrush}"
+                               Margin="0,0,8,0" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="BusySpin" />
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBlock x:Name="StatusText" Style="{StaticResource CaptionText}" Text="Ready" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock x:Name="ServerText" Style="{StaticResource CaptionText}" HorizontalAlignment="Right" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
